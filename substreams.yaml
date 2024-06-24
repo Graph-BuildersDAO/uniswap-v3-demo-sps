@@ -1,0 +1,90 @@
+specVersion: v0.1.0
+package:
+  name: uniswap_v3_basic_sps
+  version: v0.1.0
+
+imports:
+  graph: https://github.com/streamingfast/substreams-sink-subgraph/releases/download/v0.1.0/substreams-sink-subgraph-protodefs-v0.1.0.spkg
+  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v1.1.0/substreams-entity-change-v1.1.0.spkg
+  chainlink_prices: https://github.com/Graph-BuildersDAO/substreams/releases/download/chainlink-prices-v1.0.2/chainlink-price-substream-v1.0.2.spkg
+
+protobuf:
+  files:
+    - contract.proto
+  importPaths:
+    - ./proto
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/substreams.wasm
+
+modules:
+  - name: map_pools_created
+    kind: map
+    initialBlock: 12369621
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:contract.v1.Pools
+
+  - name: store_pool_count
+    kind: store
+    updatePolicy: add
+    valueType: int64
+    inputs:
+      - map: map_pools_created
+
+  - name: store_pools_created
+    kind: store
+    updatePolicy: set
+    valueType: proto:contract.types.v1.Pools
+    inputs:
+      - map: map_pools_created
+
+  - name: map_pool_events
+    kind: map
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+      - store: store_pools_created
+    output:
+      type: proto:contract.v1.PoolEvents
+
+  - name: store_pool_token_balances
+    kind: store
+    updatePolicy: add
+    valueType: bigint
+    inputs:
+      - map: map_pool_events
+
+  - name: store_pool_tvl
+    kind: store
+    updatePolicy: set
+    valueType: bigdecimal
+    inputs:
+      - store: store_pools_created
+      - store: store_pool_token_balances
+      - store: store_pool_token_balances
+        mode: deltas
+      - store: chainlink_prices:chainlink_price_store
+
+  - name: graph_out
+    kind: map
+    initialBlock: 12369621
+    inputs:
+      - map: map_pools_created
+      - store: store_pool_tvl
+        mode: deltas
+    output:
+      type: proto:sf.substreams.entity.v1.EntityChanges
+
+network: mainnet
+
+
+networks:
+  mainnet:
+    initialBlock:
+      chainlink_prices:store_confirmed_feeds: 12369621
+      chainlink_prices:get_chainlink_answers: 12369621
+      chainlink_prices:chainlink_price_store: 12369621
+      chainlink_prices:graph_out: 12369621

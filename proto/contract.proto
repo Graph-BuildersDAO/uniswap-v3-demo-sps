@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package contract.v1;
+
+message Pools {
+    repeated Pool pools = 1;
+}
+
+message Pool {
+    string address = 1;
+    Token token0 = 2;
+    Token token1 = 3;
+    string created_at_tx_hash = 4;
+    uint64 created_at_block_number = 5;
+    uint64 created_at_timestamp = 6;
+    uint64 log_ordinal = 7;
+}
+
+message Token {
+  string address = 1;
+  string name = 2;
+  string symbol = 3;
+  uint64 decimals = 4;
+}
+
+message PoolEvents {
+    repeated PoolEvent events = 1;
+}
+
+message FeeAmountEnabledCall {
+    string fee = 1;
+    string tick_spacing = 2;
+}
+
+message PoolEvent {
+    oneof type {
+      SwapEvent swap_event = 1;
+      MintEvent mint_event = 2;
+      BurnEvent burn_event = 3;
+    }
+
+    string pool_address = 4;
+    string tx_hash = 5;
+    uint64 block_number = 6;
+    uint64 timestamp = 7;
+    uint64 log_ordinal = 8;
+
+    message SwapEvent {
+        string sender = 1;
+        string recipient = 2;
+        string amount0 = 3;
+        string amount1 = 4;
+        string tick  = 5;
+    }
+    message MintEvent {
+        string sender = 1;
+        string owner = 2;
+        string amount0 = 3;
+        string amount1 = 4;
+        string amount = 5;
+        string tick_lower = 6;
+        string tick_upper = 7;
+    }
+    message BurnEvent {
+        string tick_lower = 1;
+        string tick_upper = 2;
+        string amount = 3;
+        string amount0 = 4;
+        string amount1 = 5;
+    }
+}
+
+message FailedCalls {
+    repeated FailedCall failed_calls = 1;
+}
+
+message FailedCall {
+    string call_type = 1;
+    string caller = 2;
+    string reason = 3;
+    uint64 gas_consumed = 4;
+}
+
+message Events {
+    repeated factory_PoolCreated factory_pool_createds = 3;
+}
+
+message factory_PoolCreated {
+    string evt_tx_hash = 1;
+    uint32 evt_index = 2;
+    google.protobuf.Timestamp evt_block_time = 3;
+    uint64 evt_block_number = 4;
+    bytes token0 = 5;
+    bytes token1 = 6;
+    uint64 fee = 7;
+    int64 tick_spacing = 8;
+    bytes pool = 9;
+}
